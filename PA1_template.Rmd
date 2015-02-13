@@ -64,18 +64,22 @@ library(dplyr)
 
 dataNonNA <- data[complete.cases(data), ]
 stepsPerDate <- group_by(dataNonNA, date) %>% summarise(steps = sum(steps))
+
+meanStepsPerDay <- mean(stepsPerDate$steps)
+medianStepsPerDay <- median(stepsPerDate$steps)
+
 ggplot(data=stepsPerDate, aes(x = steps)) + 
   geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth=1150) + 
-  geom_density(alpha=.3, fill="#FF5555") + 
-  geom_vline(aes(xintecept=mean(steps)), color="red", linetype="dashed", size = 1) + 
+  geom_vline(aes(xintercept = mean(steps)), color="red", linetype="dashed", size = 0.5) +
+  geom_density(alpha=.3, fill="#F75555") + 
   xlab("Number of Steps") + 
-  ylab("Density")
+  ylab("Density") +
+  ggtitle("Figure 1: Distribution of Number of Steps per Day")
 ```
 
+*NOTE: The red line in previous figure represents the mean of the number of steps.*
 
-Calculate and report the mean and median total number of steps taken per day
-
-
+As depicted on the *Figure 1*, the mean total number of steps per day is **`r format(meanStepsPerDay, digits=2, nsmall=2)`**. The median is not shown on the graphic, due to the extreme close proximity to the mean, since the median of steps per day is **`r format(medianStepsPerDay, digits=2, nsmall=2)`**.
 
 ## What is the average daily activity pattern?
 
