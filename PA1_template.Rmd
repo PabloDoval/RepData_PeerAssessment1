@@ -1,25 +1,90 @@
+```{r CaptureDate, echo = FALSE}
+## This one is left with echo = FALSE due to aesthethics motives. This is 
+## just so the document automatically updates the Date to the last compile
+## date.
+captureDate <- Sys.Date()
+```
 ---
 title: "Reproducible Research: Peer Assessment 1"
+author: Pablo Doval
+date: `r captureDate`
 output: 
   html_document:
     keep_md: true
+    theme: journal
 ---
 
+## Introduction
 
-## Loading and preprocessing the data
+This document is the result of the implementation of the first peer assessment exercise for the Reproducible Research course, and focuses on the analysis of personal activity monitoring devices. It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
 
+This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
+
+### Pre-Requisites:
+
+If the reader decides to go ahead and reproduce the analysis done on this assessments, the following pre-requisites must be met:
+
+* The data file must be downloaded and available in R's Working Directory.
+* R version is 3.1.2 (others might work, but this was developed with this specific version)
+* Package ggplot2 must be installed.
+* Package dplyr must be installed.
+
+
+## Data Set: Loading and Pre-Processing the Data
+
+The data set available for this study is a CSV file consisting on a set of 17,568 observations of the following set of parameters:
+
+* **Steps:**   Number of steps taking in a 5-minute interval. Missing values are coded as NA.
+   
+* **Date:**   The date on which the measurement was taken in YYYY-MM-DD format.
+   
+* **Interval:**   Identifier for the 5-minute interval in which measurement was taken.
+  
+
+The data set can be downloaded from (https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip).
+
+In order to load this data into R for further analysis, the **read.csv()** function will be used, performing the appropriate data type assignment on each of the columns:
+
+```{r LoadData, echo=TRUE}
+data <- read.csv(unzip("activity.zip"),
+                 sep=",",
+                 na.strings = "NA",
+                 colClasses =c("numeric","Date","numeric"))
+
+```
 
 
 ## What is mean total number of steps taken per day?
+
+In this part of the study, the total number of steps taken each day during the while 2 month period will be analyzed. In order to minimize *noise* we will first remove all the observations for which there are no data at all (both NAs and 0 steps), and then depict a histogram to show the distribution of frequency for the Steps value per each day.
+
+```{r StepsPerDateHistogram, echo=TRUE, message=FALSE, tidy=FALSE}
+library(ggplot2)
+library(dplyr)
+
+dataNonNA <- data[complete.cases(data), ]
+stepsPerDate <- group_by(dataNonNA, date) %>% summarise(steps = sum(steps))
+ggplot(data=stepsPerDate, aes(x = steps)) + 
+  geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth=1150) + 
+  geom_density(alpha=.3, fill="#FF5555") + 
+  geom_vline(aes(xintecept=mean(steps)), color="red", linetype="dashed", size = 1) + 
+  xlab("Number of Steps") + 
+  ylab("Density")
+```
+
+
+Calculate and report the mean and median total number of steps taken per day
 
 
 
 ## What is the average daily activity pattern?
 
-
+bla bla
 
 ## Imputing missing values
 
-
+bla bla
 
 ## Are there differences in activity patterns between weekdays and weekends?
+
+bla bla
