@@ -5,18 +5,19 @@
 captureDate <- Sys.Date()
 ```
 ---
-title: "Reproducible Research: Peer Assessment 1"
+title: "Study on Personal Activity Monitoring Devices"
 author: Pablo Doval
 date: `r captureDate`
 output: 
   html_document:
     keep_md: true
-    theme: journal
+    theme: united
+    highlight: neon
 ---
 
 ## Introduction
 
-This document is the result of the implementation of the first peer assessment exercise for the Reproducible Research course, and focuses on the analysis of personal activity monitoring devices. It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
+This document is the result of the implementation of the first peer assessment exercise for the *Reproducible Research* course, and focuses on the analysis of personal activity monitoring devices. It is now possible to collect a large amount of data about personal movement using activity monitoring devices such as a Fitbit, Nike Fuelband, or Jawbone Up. These type of devices are part of the "quantified self" movement -- a group of enthusiasts who take measurements about themselves regularly to improve their health, to find patterns in their behavior, or because they are tech geeks. But these data remain under-utilized both because the raw data are hard to obtain and there is a lack of statistical methods and software for processing and interpreting the data.
 
 This assignment makes use of data from a personal activity monitoring device. This device collects data at 5 minute intervals through out the day. The data consists of two months of data from an anonymous individual collected during the months of October and November, 2012 and include the number of steps taken in 5 minute intervals each day.
 
@@ -46,13 +47,21 @@ The data set can be downloaded from (https://d396qusza40orc.cloudfront.net/repda
 In order to load this data into R for further analysis, the **read.csv()** function will be used, performing the appropriate data type assignment on each of the columns:
 
 ```{r LoadData, echo=TRUE}
+## Data load and column data type assignment
 data <- read.csv(unzip("activity.zip"),
-                 sep=",",
+                 sep = ",",
                  na.strings = "NA",
-                 colClasses =c("numeric","Date","numeric"))
+                 colClasses = c("numeric","Date","numeric"))
 
+## Summary of the data loaded
+summary(data)
+
+## Basic stats on the data set
+observations <- nrow(data)
+variables <- ncol(data)
 ```
 
+This data set contains **`r observations`** observations, with **`r variables`** variables each.
 
 ## What is mean total number of steps taken per day?
 
@@ -62,19 +71,23 @@ In this part of the study, the total number of steps taken each day during the w
 library(ggplot2)
 library(dplyr)
 
+## Remove the NAs and get the stepsPerDate
 dataNonNA <- data[complete.cases(data), ]
 stepsPerDate <- group_by(dataNonNA, date) %>% summarise(steps = sum(steps))
 
+## Get the Mean and the Median
 meanStepsPerDay <- mean(stepsPerDate$steps)
 medianStepsPerDay <- median(stepsPerDate$steps)
 
+## Plot the histogram, with a density curve and a vertical line showing the mean
 ggplot(data=stepsPerDate, aes(x = steps)) + 
-  geom_histogram(aes(y=..density..), colour="black", fill="white", binwidth=1150) + 
-  geom_vline(aes(xintercept = mean(steps)), color="red", linetype="dashed", size = 0.5) +
-  geom_density(alpha=.3, fill="#F75555") + 
+  geom_histogram(aes(y = ..density..), colour = "black", fill = "white", binwidth = 1150) + 
+  geom_vline(aes(xintercept = mean(steps)), color = "red", linetype = "dashed", size = 0.5) +
+  geom_density(alpha = .3, fill = "#F75555") + 
   xlab("Number of Steps") + 
   ylab("Density") +
-  ggtitle("Figure 1: Distribution of Number of Steps per Day")
+  ggtitle("Figure 1: Distribution of Number of Steps per Day") +
+  theme(plot.title = element_text (lineheight=.9, face="bold"))
 ```
 
 *NOTE: The red line in previous figure represents the mean of the number of steps.*
@@ -89,18 +102,38 @@ This section will analyze the average daily activity pattern of the subject of t
 library(ggplot2)
 library(dplyr)
 
+## New data set without NAs, and factor the interval column
 dataNonNA <- data[complete.cases(data), ]
-stepsPerInterval <- group_by(dataNonNA, date) %>% summarise(steps = mean(steps))
-maximumStepsPerInterval <- max(stepsPerInterval$steps)
-intervalOfMaximumSteps <- stepsPerInterval[stepsPerInterval$steps==max(maximumStepsPerInterval), 1]
+dataNonNA$interval <- as.factor(dataNonNA$interval)
+
+## Group by Interval and Mean
+activityPerInterval <- dataNonNA %>% 
+                       group_by(interval) %>% 
+                       summarise(meanSteps = mean(steps))
+
+## Compute Interval of maxium steps
+intervalOfMaximumSteps <- activityPerInterval[which.max(activityPerInterval$meanSteps),]
+
+## Plot the data
+ggplot(data=activityPerInterval, aes(x = as.numeric(levels(interval))[interval], 
+                                     y = meanSteps, 
+                                     group = 1)) + 
+  geom_line(colour = "black", linetype = "solid", size = 1) + 
+  geom_point(colour="#F75555", size=1.5, shape=20, fill="#EB92F7", alpha=.6) +
+  scale_x_continuous(breaks = c(0, 500, 1000, 1500, 2000, 2400), 
+                     labels = c("00:00", "05:00", "10:00", "15:00", "20:00", "00:00")) +
+  ggtitle("Figure 2: Avg. Number of Steps per Interval") + 
+  theme(plot.title = element_text (lineheight=.9, face="bold")) + 
+  xlab("Hour") + 
+  ylab("Average Steps")
 ```
 
-According to this analysis, the maximum number of steps per interval, in average across all days, is **`r format(maximumStepsPerInterval, digits=2, nsmall=2)`**, which is on the interval **`r format(intervalOfMaximumSteps, digits=2, nsmall=2)`**.
+According to this analysis, the interval on which, in average across all days, the subject of the experiment has registered more steps is interval **`r intervalOfMaximumSteps$interval`**, with **`r format(intervalOfMaximumSteps$meanSteps, digits=2, nsmall=2)`** steps on average.
 
 
 ## Imputing missing values
 
-bla bla
+This data set shows a considerable number of missing values, which is quite understandable on type of data sets; the device might ran out of battery, or the subject of the experiment might have opted not to wear it - or simply forgot to do it - on particular ocassions.
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
