@@ -83,7 +83,20 @@ As depicted on the *Figure 1*, the mean total number of steps per day is **`r fo
 
 ## What is the average daily activity pattern?
 
-bla bla
+This section will analyze the average daily activity pattern of the subject of the experiment, and will try to identify which 5-minute interval, on average across all the days in the data set, contains the maximum number of steps.
+
+```{r AverageDailyActivity, echo=TRUE, message=FALSE, tidy=FALSE}
+library(ggplot2)
+library(dplyr)
+
+dataNonNA <- data[complete.cases(data), ]
+stepsPerInterval <- group_by(dataNonNA, date) %>% summarise(steps = mean(steps))
+maximumStepsPerInterval <- max(stepsPerInterval$steps)
+intervalOfMaximumSteps <- stepsPerInterval[stepsPerInterval$steps==max(maximumStepsPerInterval), 1]
+```
+
+According to this analysis, the maximum number of steps per interval, in average across all days, is **`r format(maximumStepsPerInterval, digits=2, nsmall=2)`**, which is on the interval **`r format(intervalOfMaximumSteps, digits=2, nsmall=2)`**.
+
 
 ## Imputing missing values
 
