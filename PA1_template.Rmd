@@ -135,6 +135,82 @@ According to this analysis, the interval on which, in average across all days, t
 
 This data set shows a considerable number of missing values, which is quite understandable on type of data sets; the device might ran out of battery, or the subject of the experiment might have opted not to wear it - or simply forgot to do it - on particular ocassions.
 
+Let's investigate a little bit more on the quality of our data set:
+
+```{r MissingValues, echo=TRUE, message=FALSE}
+## Count total and missing values 
+missing <- data[which(is.na(data)),]
+
+countMissing <- nrow(missing)
+totalRows <- nrow(data)
+```
+
+A quick analysis with the previous R code reveals that **`r countMissing`** rows (out of a total of `r totalRows` rows) contain missing values.
+
+In order to be able to better understand the patterns of activy of the subject of the experiment in the next steps, we will try to improve the quality of the data set by filling these activity gaps with some infered values; in this case we are simply going to use the average values computed for the previous exercise.
+
+```{r FillMissingValues, echo=TRUE, message=FALSE, tidy=FALSE}
+## Count total and missing values 
+inferedDataSet <- data
+
+for(row in 1:nrow(inferedDataSet))
+{
+   if(is.na(inferedDataSet[row,]$steps))
+   {
+      interval <- inferedDataSet[row,]$interval  
+      inferedDataSet[row,]$steps <- activityPerInterval[which(activityPerInterval$interval == interval),]$meanSteps
+   }        
+}
+```
+
+Now that we have created a new data set with not gaps, let's see the histogram
+
+```{r StepsPerDateInferedDataSetHistogram, echo=TRUE, message=FALSE, tidy=FALSE}
+library(ggplot2)
+library(dplyr)
+
+## Compute the steps per date on the new data set
+stepsPerDateInferedDataSet <- group_by(inferedDataSet, date) %>% summarise(steps = sum(steps))
+
+## Get the Mean and the Median
+meanStepsPerDayInferedDataSet <- mean(stepsPerDateInferedDataSet$steps)
+medianStepsPerDayInferedDataSet <- median(stepsPerDateInferedDataSet$steps)
+
+## Plot the histogram, with a density curve and a vertical line showing the mean
+ggplot(data=stepsPerDateInferedDataSet, aes(x = steps)) + 
+  geom_histogram(aes(y = ..density..), colour = "black", fill = "white", binwidth = 1150) + 
+  geom_vline(aes(xintercept = mean(steps)), color = "red", linetype = "dashed", size = 0.5) +
+  geom_density(alpha = .3, fill = "#F75555") + 
+  xlab("Number of Steps") + 
+  ylab("Density") +
+  ggtitle("Figure 3: Distribution of Number of Steps per Day on the Infered Data Set") +
+  theme(plot.title = element_text (lineheight=.9, face="bold"))
+```
+
+It is quite obvious the the histogram difers greatly from the previously computed with the original data set with gaps. The new data set's mean for the total number of steps per day is **`r format(meanStepsPerDayInferedDataSet, digits=2, nsmall=2)`**, while the median is **`r format(medianStepsPerDayInferedDataSet, digits=2, nsmall=2)`**.
+
+Now let's compare both histograms by their density area:
+
+```{r HistogramComparision, echo=TRUE, message=FALSE, tidy=FALSE}
+library(ggplot2)
+library(dplyr)
+
+## Generate a new data set with both data frame's data on in...
+combinedData1 <- mutate(stepsPerDate, source = "Original")
+combinedData2 <- mutate(stepsPerDateInferedDataSet, source = "Infered Gaps")
+combinedData <- rbind(combinedData1, combinedData2)
+
+## Plot the histogram, with a density curve and a vertical line showing the mean
+ggplot(data=combinedData, aes(x = steps, fill = source)) + 
+  geom_density(alpha = .3) + 
+  xlab("Number of Steps") + 
+  ylab("Density") +
+  ggtitle("Figure 4: Comparision of Both Data Sets") +
+  theme(plot.title = element_text (lineheight=.9, face="bold"))
+```
+
+The comparision of both density graphs show quite clearly that the filling of the gaps has a great effect on the distribution of the data.
+
 ## Are there differences in activity patterns between weekdays and weekends?
 
 bla bla
