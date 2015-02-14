@@ -29,6 +29,7 @@ If the reader decides to go ahead and reproduce the analysis done on this assess
 * R version is 3.1.2 (others might work, but this was developed with this specific version)
 * Package ggplot2 must be installed.
 * Package dplyr must be installed.
+* Package gridExtra must be installed.
 
 
 ## Data Set: Loading and Pre-Processing the Data
@@ -118,7 +119,7 @@ intervalOfMaximumSteps <- activityPerInterval[which.max(activityPerInterval$mean
 ggplot(data=activityPerInterval, aes(x = as.numeric(levels(interval))[interval], 
                                      y = meanSteps, 
                                      group = 1)) + 
-  geom_line(colour = "black", linetype = "solid", size = 1) + 
+  geom_line(colour = "#E69F00", linetype = "solid", size = 1) + 
   geom_point(colour="#F75555", size=1.5, shape=20, fill="#EB92F7", alpha=.6) +
   scale_x_continuous(breaks = c(0, 500, 1000, 1500, 2000, 2400), 
                      labels = c("00:00", "05:00", "10:00", "15:00", "20:00", "00:00")) +
@@ -145,7 +146,7 @@ countMissing <- nrow(missing)
 totalRows <- nrow(data)
 ```
 
-A quick analysis with the previous R code reveals that **`r countMissing`** rows (out of a total of `r totalRows` rows) contain missing values.
+A quick analysis with the previous R code reveals that **`r countMissing`** rows (out of a total of *`r totalRows`* rows) contain missing values.
 
 In order to be able to better understand the patterns of activy of the subject of the experiment in the next steps, we will try to improve the quality of the data set by filling these activity gaps with some infered values; in this case we are simply going to use the average values computed for the previous exercise.
 
@@ -163,7 +164,7 @@ for(row in 1:nrow(inferedDataSet))
 }
 ```
 
-Now that we have created a new data set with not gaps, let's see the histogram
+Now that we have created a new data set with not gaps, let's see the histogram:
 
 ```{r StepsPerDateInferedDataSetHistogram, echo=TRUE, message=FALSE, tidy=FALSE}
 library(ggplot2)
@@ -213,4 +214,93 @@ The comparision of both density graphs show quite clearly that the filling of th
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-bla bla
+One obvious question that we can ask from this data set is whether there are different activity patterns between weekdays and weekends on the subject of the study; the analysis here will be quite similar to the analysis done previously, but adding a new factor column that will indicate wheter the day lies on a weekday or weekend.
+
+```{r AnalysisPerDayType, echo=TRUE, message=FALSE, tidy=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+
+## Set up locale to English
+Sys.setlocale("LC_TIME", "C")
+
+## Get the data  set and factor the day type and the interval
+dataPerDayType <- mutate(inferedDataSet, 
+                         dayType = ifelse
+                         (
+                           weekdays(inferedDataSet$date) == "Sunday" |  weekdays(inferedDataSet$date) == "Saturday", 
+                           "Weekend", 
+                           "Weekday"
+                         ))
+dataPerDayType$dayType <- as.factor(dataPerDayType$dayType)
+dataPerDayType$interval <- as.factor(dataPerDayType$interval)
+
+## Now we group and summarize the data as we did before, in two 
+## groups: weekend and weekday
+
+weekend <- dataPerDayType %>% 
+        filter(dayType == "Weekend") %>%
+        group_by(interval) %>% 
+        summarise (meanSteps = mean(steps))
+
+
+weekday <- dataPerDayType %>% 
+        filter(dayType == "Weekday") %>%
+        group_by(interval) %>% 
+        summarise (meanSteps = mean(steps))
+
+gfx1 <- ggplot(data = weekend, aes(x = as.numeric(levels(interval))[interval], y = meanSteps, group = 1)) + 
+  geom_line(colour = "#E69F00") + 
+##  geom_point(colour="#F75555", size=1.5, shape=20, fill="#EB92F7", alpha=.6) +
+  scale_x_continuous(breaks = c(0,500,1000, 1500, 2000, 2400), 
+                     labels = c("00:00", "05:00", "10:00", "15:00", "20:00", "00:00")) +
+  ggtitle("Figure 5: Avg. Number of Steps per Interval on Weekends") + 
+  theme(plot.title = element_text(lineheight = .8, face = "bold")) +
+  xlab("Hour") + 
+  ylab("Average Steps")
+
+gfx2 <- ggplot(data = weekday, aes(x = as.numeric(levels(interval))[interval], y = meanSteps, group = 1)) + 
+  geom_line(colour = "#E69F00") + 
+##  geom_point(colour="#F75555", size=1.5, shape=20, fill="#EB92F7", alpha=.6) +
+  scale_x_continuous(breaks = c(0,500,1000, 1500, 2000, 2400), 
+                     labels = c("00:00", "05:00", "10:00", "15:00", "20:00", "00:00")) +
+  ggtitle("Figure 6: Avg. Number of Steps per Interval on Weekdays") + 
+  theme(plot.title = element_text(lineheight = .8, face = "bold")) +
+  xlab("Hour") + 
+  ylab("Average Steps")
+
+## Arrange both graphs on the same grid
+grid.arrange(gfx1, gfx2, nrow = 2, main = "Activity Patterns per Day Type")
+```
+
+Analyzing both plots we can deduce that the peak of activity is higher on weekends, but let's plot both of them on the same graph so we can compare them better:
+
+```{r DirectComparisionPerDayType, echo=TRUE, message=FALSE, tidy=FALSE}
+library(ggplot2)
+library(gridExtra)
+library(dplyr)
+
+## First, let's combine both datasets
+allDays <- dataPerDayType %>% 
+           group_by(interval, dayType) %>% 
+           summarise (meanSteps = mean(steps))
+
+## Now lets plot it
+ggplot(data = allDays, 
+       aes(x = as.numeric(levels(interval))[interval], 
+           y = meanSteps, 
+           group = dayType, 
+           colour = dayType, 
+           fill = dayType)) + 
+  geom_line() + 
+  scale_x_continuous(breaks = c(0,500,1000, 1500, 2000, 2400), 
+                     labels = c("00:00", "05:00", "10:00", "15:00", "20:00", "00:00")) +
+  geom_polygon(data = allDays, aes(as.numeric(levels(interval))[interval], meanSteps), alpha = 0.4) +
+  ggtitle("Figure 7: Direct Comparision of Activity between Day Types") + 
+  theme(plot.title = element_text(lineheight = .8, face = "bold")) +
+  xlab("Hour") + 
+  ylab("Average Steps")
+ 
+```
+
+This last graph shows quite clearly that, while the activity peaks at sometime around 08:30 AM on weekdays, the rest of the day is more inactive; probably due to the fact that this subject's job do not require plenty of physical activity. On the other hand, weekends show an increased activity on average beteen all hours, but with a much slower start of the day.
